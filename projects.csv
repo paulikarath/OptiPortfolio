@@ -1,21 +1,21 @@
-project_name,cost,benefit,risk_score
-AI Chatbot Upgrade,50000,80,4
-Battery Efficiency Research,120000,150,7
-Solar Panel Coating,75000,95,5
-Autonomous Parking Module,200000,220,8
-Supply Chain Predictive Analytics,60000,90,3
-Employee Safety AI Monitor,40000,55,2
-Cloud Cost Optimizer,30000,45,2
-Factory Robotics Arm Upgrade,150000,180,6
-EV Charging Network Expansion,250000,260,7
-Customer Support Automation,45000,70,3
-Predictive Maintenance System,90000,130,5
-Recycling Process Improvement,55000,75,4
-Data Privacy Compliance Tool,35000,50,2
-Voice Assistant Integration,65000,85,4
-Smart Grid Load Balancer,180000,200,7
-Warehouse Inventory AI,70000,100,4
-Cybersecurity Threat Detector,110000,140,6
-Employee Training VR Platform,48000,60,3
-Fleet Route Optimizer,85000,115,5
-Carbon Footprint Tracker,52000,68,3
+project_name,cost,benefit,risk_score,depends_on
+AI Chatbot Upgrade,50000,80,4,
+Battery Efficiency Research,120000,150,7,
+Solar Panel Coating,75000,95,5,Battery Efficiency Research
+Autonomous Parking Module,200000,220,8,AI Chatbot Upgrade
+Supply Chain Predictive Analytics,60000,90,3,
+Employee Safety AI Monitor,40000,55,2,
+Cloud Cost Optimizer,30000,45,2,
+Factory Robotics Arm Upgrade,150000,180,6,
+EV Charging Network Expansion,250000,260,7,Battery Efficiency Research
+Customer Support Automation,45000,70,3,AI Chatbot Upgrade
+Predictive Maintenance System,90000,130,5,Factory Robotics Arm Upgrade
+Recycling Process Improvement,55000,75,4,
+Data Privacy Compliance Tool,35000,50,2,
+Voice Assistant Integration,65000,85,4,AI Chatbot Upgrade
+Smart Grid Load Balancer,180000,200,7,Battery Efficiency Research
+Warehouse Inventory AI,70000,100,4,Supply Chain Predictive Analytics
+Cybersecurity Threat Detector,110000,140,6,Data Privacy Compliance Tool
+Employee Training VR Platform,48000,60,3,
+Fleet Route Optimizer,85000,115,5,Supply Chain Predictive Analytics
+Carbon Footprint Tracker,52000,68,3,

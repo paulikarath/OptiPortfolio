@@ -31,6 +31,38 @@ n_projects = len(data)
 
 print(f"Loaded {n_projects} projects.")
 
+# ---------- BUILD THE DEPENDENCY GRAPH ----------
+# This is a real graph structure: each project (node) points to the project
+# it depends on (a directed edge). We store it as a dictionary:
+#   dependency_graph[project_index] = index of the project it requires (or None)
+name_to_index = {name: i for i, name in enumerate(data["project_name"])}
+dependency_graph = {}
+
+for i, row in data.iterrows():
+    dep_name = row["depends_on"]
+    if pd.isna(dep_name) or str(dep_name).strip() == "":
+        dependency_graph[i] = None
+    else:
+        dependency_graph[i] = name_to_index[str(dep_name).strip()]
+
+print("Dependency graph built:")
+for i, dep in dependency_graph.items():
+    if dep is not None:
+        print(f"  '{data['project_name'][i]}' requires '{data['project_name'][dep]}'")
+
+def count_dependency_violations(chromosome):
+    """
+    Walks the graph: for every selected project, check if its required
+    prerequisite (if any) is ALSO selected. Returns how many are broken.
+    """
+    violations = 0
+    for i in range(n_projects):
+        if chromosome[i] == 1:
+            required = dependency_graph[i]
+            if required is not None and chromosome[required] == 0:
+                violations += 1
+    return violations
+
 # ---------- STEP 2: SCORE A GUESS (the "fitness function") ----------
 def fitness(chromosome):
     """
@@ -55,6 +87,11 @@ def fitness(chromosome):
     # Punish going over risk limit
     if avg_risk > RISK_LIMIT:
         score -= PENALTY * (avg_risk - RISK_LIMIT)
+
+    # Punish broken dependencies (picked a project without its prerequisite)
+    violations = count_dependency_violations(chromosome)
+    if violations > 0:
+        score -= PENALTY * violations
 
     return score
 
@@ -201,6 +238,8 @@ if __name__ == "__main__":
     print(f"\nTotal Cost:    ${total_cost:,} / ${BUDGET:,} budget")
     print(f"Total Benefit: {total_benefit}")
     print(f"Average Risk:  {avg_risk:.2f} / {RISK_LIMIT} limit")
+    dep_violations = count_dependency_violations(best_solution)
+    print(f"Dependency Check: {'PASSED - all prerequisites satisfied' if dep_violations == 0 else f'FAILED - {dep_violations} broken dependencies'}")
 
     # ---------- COMPARE AGAINST GREEDY BASELINE ----------
     greedy_chosen, greedy_benefit = greedy_selection()
