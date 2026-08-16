@@ -224,6 +224,66 @@ def simulated_annealing(initial_temp=1000, cooling_rate=0.995, iterations=2000):
 
     return best, best_score, history
 
+# ---------- ALGORITHM 3: PARTICLE SWARM OPTIMIZATION (Binary PSO) ----------
+def particle_swarm_optimization(n_particles=30, iterations=150, w=0.7, c1=1.5, c2=1.5):
+    """
+    Think of a flock of birds searching for the best spot:
+    - Each 'particle' = one candidate solution (a row of 0s and 1s)
+    - Each particle has a 'velocity' = how likely each bit is to flip
+    - Each particle remembers its OWN best solution ever found (personal best)
+    - The whole swarm remembers the BEST solution anyone has found (global best)
+    - Every step, each particle's velocity gets pulled toward both its own best
+      AND the swarm's best - so the swarm gradually clusters around good answers.
+
+    Since our solutions are binary (0/1), we use "binary PSO": velocity gets
+    squashed into a probability (via sigmoid), and we roll a random number to
+    decide if each bit turns on or off.
+    """
+    def sigmoid(x):
+        return 1 / (1 + np.exp(-x))
+
+    # each particle starts as a random position + random velocity
+    positions = [np.random.randint(0, 2, n_projects) for _ in range(n_particles)]
+    velocities = [np.random.uniform(-1, 1, n_projects) for _ in range(n_particles)]
+
+    personal_best = [p.copy() for p in positions]
+    personal_best_scores = [fitness(p) for p in positions]
+
+    global_best_idx = np.argmax(personal_best_scores)
+    global_best = personal_best[global_best_idx].copy()
+    global_best_score = personal_best_scores[global_best_idx]
+
+    history = [global_best_score]
+
+    for it in range(iterations):
+        for i in range(n_particles):
+            r1, r2 = np.random.rand(n_projects), np.random.rand(n_projects)
+
+            # update velocity: blend of "keep going the way you were" (w),
+            # "pull toward your own best" (c1), and "pull toward swarm's best" (c2)
+            velocities[i] = (
+                w * velocities[i]
+                + c1 * r1 * (personal_best[i] - positions[i])
+                + c2 * r2 * (global_best - positions[i])
+            )
+
+            # convert velocity into a probability, then flip a coin per project
+            probs = sigmoid(velocities[i])
+            positions[i] = (np.random.rand(n_projects) < probs).astype(int)
+
+            score = fitness(positions[i])
+            if score > personal_best_scores[i]:
+                personal_best[i] = positions[i].copy()
+                personal_best_scores[i] = score
+
+            if score > global_best_score:
+                global_best = positions[i].copy()
+                global_best_score = score
+
+        history.append(global_best_score)
+
+    return global_best, global_best_score, history
+
 # ---------- STEP 8: SHOW THE RESULTS ----------
 if __name__ == "__main__":
     best_solution, best_score, history = run_ga()
@@ -249,13 +309,21 @@ if __name__ == "__main__":
     sa_selected = data[sa_solution == 1]
     sa_benefit = sa_selected["benefit"].sum()
 
+    # ---------- RUN PARTICLE SWARM OPTIMIZATION ----------
+    pso_solution, pso_score, pso_history = particle_swarm_optimization()
+    pso_selected = data[pso_solution == 1]
+    pso_benefit = pso_selected["benefit"].sum()
+    pso_violations = count_dependency_violations(pso_solution)
+
     ga_improvement = ((total_benefit - greedy_benefit) / greedy_benefit) * 100
     sa_improvement = ((sa_benefit - greedy_benefit) / greedy_benefit) * 100
+    pso_improvement = ((pso_benefit - greedy_benefit) / greedy_benefit) * 100
 
-    print("\n===== COMPARISON: GA vs SA vs GREEDY BASELINE =====")
+    print("\n===== COMPARISON: GA vs SA vs PSO vs GREEDY BASELINE =====")
     print(f"Greedy baseline benefit: {greedy_benefit}")
     print(f"GA benefit:              {total_benefit}  ({ga_improvement:.1f}% vs greedy)")
     print(f"SA benefit:              {sa_benefit}  ({sa_improvement:.1f}% vs greedy)")
+    print(f"PSO benefit:             {pso_benefit}  ({pso_improvement:.1f}% vs greedy, {pso_violations} dependency violations)")
 
     # ---------- CHART 1: HOW THE GA IMPROVED OVER TIME ----------
     plt.figure(figsize=(8, 5))
@@ -267,12 +335,12 @@ if __name__ == "__main__":
     plt.savefig("convergence_chart.png", dpi=150, bbox_inches="tight")
     print("\nSaved chart: convergence_chart.png")
 
-    # ---------- CHART 2: GA vs SA vs GREEDY BAR COMPARISON ----------
-    plt.figure(figsize=(6, 5))
-    plt.bar(["Greedy\nBaseline", "Simulated\nAnnealing", "Genetic\nAlgorithm"],
-            [greedy_benefit, sa_benefit, total_benefit],
-            color=["#94a3b8", "#3b82f6", "#22c55e"])
-    plt.title("Total Benefit: GA vs SA vs Greedy Baseline")
+    # ---------- CHART 2: GA vs SA vs PSO vs GREEDY BAR COMPARISON ----------
+    plt.figure(figsize=(7, 5))
+    plt.bar(["Greedy\nBaseline", "Simulated\nAnnealing", "Particle Swarm\nOptimization", "Genetic\nAlgorithm"],
+            [greedy_benefit, sa_benefit, pso_benefit, total_benefit],
+            color=["#94a3b8", "#3b82f6", "#f59e0b", "#22c55e"])
+    plt.title("Total Benefit: GA vs SA vs PSO vs Greedy Baseline")
     plt.ylabel("Total Benefit Score")
     plt.savefig("comparison_chart.png", dpi=150, bbox_inches="tight")
     print("Saved chart: comparison_chart.png")
